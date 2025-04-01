@@ -61,20 +61,19 @@ def check_requirements_in_advancement(advancement_file, requirements_file, outpu
             requirements.add(requirement)
 
     # Load advancement data
-    advancement_data = {}
+    advancement_requirements = set()  # Using set to track all unique requirements in the advancement data
     with open(advancement_file, mode='r') as file:
         reader = csv.reader(file)
         next(reader)  # Skip header
         for row in reader:
             if len(row) != 3:
                 continue
-            scout, req, _ = row
+            _, req, _ = row
             req = req.strip().lower()  # Normalize the requirement name
-            if req not in requirements:
-                requirements.add(req)  # Add unknown requirement
+            advancement_requirements.add(req)
 
     # Find requirements in advancement.csv that aren't in requirements.tsv
-    unlisted_requirements = requirements - set(requirements)
+    unlisted_requirements = advancement_requirements - requirements
 
     # Write the report
     output_file = os.path.join(output_dir, 'requirements_in_advancement.txt')
@@ -83,7 +82,6 @@ def check_requirements_in_advancement(advancement_file, requirements_file, outpu
         for req in unlisted_requirements:
             file.write(f"{req}\n")
     print(f"Requirement report saved to {output_file}")
-
 
 def main():
     # Command-line argument parsing

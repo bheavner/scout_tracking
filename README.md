@@ -4,11 +4,11 @@ This project helps to generate reports and perform quality checks for scout adva
 Collectively, these scripts process a Scoutbook data export to produce an advancement chart for each Patrol in a Troop.
 
 This README describes:
-[CLI Commands and Usage](#CLI-Commands-and-Usage)
-[Example Input Files](#Example-Input-Files)
-[Expected Output Files](#Expected-Output-Files)
-[License](#License)
-[Attribution](#Attribution)
+- [CLI Commands and Usage](#CLI-Commands-and-Usage)
+- [Example Input Files](#Example-Input-Files)
+- [Expected Output Files](#Expected-Output-Files)
+- [License](#License)
+- [Attribution](#Attribution)
 
 
 ## CLI Commands and Usage
@@ -49,7 +49,7 @@ Frank Jones,Scout Rank Requirement 2b,7/19/2024
 
 **Usage**:
 ```
-python generate_report.py <advancement_file> <patrols_file> <requirements_file> <output_dir> [--patrol_name <patrol_name>]
+python generate_report.py <advancement_file> <patrols_file> <requirements_file> <output_dir> [<patrol_name>]
 ```
 
 **Arguments**:
@@ -57,11 +57,11 @@ python generate_report.py <advancement_file> <patrols_file> <requirements_file> 
 - `patrols_file`: Path to the patrol membership file (TSV format).
 - `requirements_file`: Path to the requirements list file (TSV format).
 - `output_dir`: Directory where the reports will be saved.
-- `--patrol_name`: Optional patrol name to generate report for a specific patrol (default is all patrols).
+- `patrol_name`: Optional patrol name to generate report for a specific patrol (default is all patrols).
 
 **Example**:
 ```
-python generate_report.py scout_tracking/advancement.csv scout_tracking/patrols.tsv scout_tracking/requirements.tsv ./reports --patrol_name Lions
+python generate_report.py scout_tracking/advancement.csv scout_tracking/patrols.tsv scout_tracking/requirements.tsv ./reports Lions
 ```
 
 **Output**:
@@ -118,11 +118,11 @@ A TSV file listing requirements in the advancement file that are not listed in t
 
 ### 5. `qc_checks.py`
 
-**Purpose**: Run all quality checks (scouts not assigned to patrols and requirements not found in the requirements file) and save the results to separate reports.
+**Purpose**: Run quality checks and save the results to separate reports. Specific QC checks can be selected, or all will run by default. Currently, QC checks include 1) checking for scouts in the advancement report that are not assigned oto patrols; and 2) any requirements in the advancement report that are not included in the requirements file.
 
 **Usage**:
 ```
-python qc_checks.py <advancement_file> <patrols_file> <requirements_file> <output_dir>
+python qc_checks.py <advancement_file> <patrols_file> <requirements_file> <output_dir> [--check_scouts] [--check_requirements]
 ```
 
 **Arguments**:
@@ -130,6 +130,8 @@ python qc_checks.py <advancement_file> <patrols_file> <requirements_file> <outpu
 - `patrols_file`: Path to the patrol membership file (TSV format).
 - `requirements_file`: Path to the requirements list file (TSV format).
 - `output_dir`: Directory where the QC reports will be saved.
+- `--check_scouts`: Optional argument to just run the check_scouts QC
+- `--check_requirements`: Optional argument to just run the check_requirements QC
 
 **Example**:
 ```

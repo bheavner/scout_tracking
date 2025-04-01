@@ -50,35 +50,24 @@ def load_requirements(filename):
     return requirements
 
 # Generate the patrol report
-def generate_patrol_report(patrol, patrol_data, advancement_data, requirements, output_dir):
-    # List of all required requirements
-    required_requirements = [req[0].strip() for req in requirements]  # Getting the first column from requirements.tsv
-    
-    # Prepare the file path for saving the report
-    output_file = os.path.join(output_dir, f"{patrol}_report.tsv")
+def generate_patrol_report(advancement_data, patrol_data, requirements, patrol_name):
+    # Get the list of Scouts in the specified patrol
+    scouts_in_patrol = patrol_data.get(patrol_name, [])
+    report = []
 
-    # Write the header
-    with open(output_file, 'w') as file:
-        file.write("Requirement\t")
-        file.write("\t".join(patrol_data[patrol]) + "\n")
-        
-        # Iterate through the requirements and list them in order
-        for req in required_requirements:
-            file.write(req + "\t")
-            for scout in patrol_data[patrol]:
-                scout_lower = scout.lower()
-                # If the scout has completed the requirement, indicate the completion date
-                if scout_lower in advancement_data:
-                    completed_requirements = [r[0].lower() for r in advancement_data[scout_lower]]
-                    if req.lower() in completed_requirements:
-                        completed_date = next(r[1] for r in advancement_data[scout_lower] if r[0].lower() == req.lower())
-                        file.write(completed_date + "\t")
-                    else:
-                        file.write("\t")
-                else:
-                    file.write("\t")
-            file.write("\n")
-    print(f"Patrol report for {patrol} saved to {output_file}")
+    # Add the header row with the requirement names and patrol members
+    header = ['Requirement'] + scouts_in_patrol
+    report.append(header)
+
+    # For each requirement, check if each scout has completed it
+    for req, alt_text in requirements:
+        row = [alt_text if alt_text else req]  # Use alternative text if available
+        for scout in scouts_in_patrol:
+            completed = '✔' if req in advancement_data.get(scout, []) else ''
+            row.append(completed)
+        report.append(row)
+
+    return report
 
 # Save the report to a file
 def save_report(report, patrol_name, output_dir):
