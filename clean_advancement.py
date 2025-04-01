@@ -10,13 +10,16 @@ def clean_csv(input_file, output_file):
     advancement_remove_values = [
         'Bobcat', 'Tiger', 'Wolf', 'Bear', 'Webelos', 
         'Arrow of Light', 'Venturing', 'Discovery', 
-        'Pathfinder', 'Summit'
+        'Pathfinder', 'Summit', 'Lion'
     ]
 
     # List of values for which 'Advancement Type' column should be checked to start with
     advancement_type_remove_prefixes = [
         'Venturing', 'Discovery', 'Pathfinder', 
-        'Summit', 'Merit', 'Award'
+        'Summit', 'Merit', 'Award', 'Webelos',
+        'Arrow of Light', 'Apprentice', 'Adventure',
+        'Tiger', 'Bear', 'Bobcat', 'Academics & Sports',
+        'Wolf', 'Lion'
     ]
 
     # Remove rows where 'Advancement' column contains any of the listed values
