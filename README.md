@@ -15,6 +15,9 @@ You can run it from the command line like:
 You can run it from the command line like:
 'python generate_report.py advancement.tsv patrols.tsv requirements.tsv ./reports'
 
+#advancement.tsv
+an example cleaned advancement report (what would be produced by `clean_advancement.py`
+
 # requirements.tsv
 a list of advancement requirements through first class rank (as of 2025)
 
