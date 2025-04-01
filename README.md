@@ -9,9 +9,9 @@ Collectively, these scripts process a Scoutbook data export to produce an advanc
 This script processes the Scoutbook export/backup file to remove extra fields and records not related to Scout Advancement Work (for example, Cub Scout Awards).
 
 #### Command:
-\```
+```
 python clean_advancement.py <input_file> <output_file>
-\```
+```
 
 #### Example Input:
 **troop100__advancement.csv**
