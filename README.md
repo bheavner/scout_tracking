@@ -15,17 +15,17 @@ python clean_advancement.py <input_file> <output_file>
 
 #### Example Input:
 **troop100__advancement.csv**
-\```
+```
 "BSA Member ID","First Name","Middle Name","Last Name","Advancement Type","Advancement","Version","Date Completed","Approved","Awarded","MarkedCompletedBy","MarkedCompletedDate","CounselorApprovedBy","CounselorApprovedDate","LeaderApprovedBy","LeaderApprovedDate","AwardedBy","AwardedDate"
 12600561,"Frank","A","Jones",,"Scout Rank Requirement","2b",2022,"7/19/2024",1,,ASM_Bill,8/6/2024,,,SM_Mary,8/27/2024,,
-\```
+```
 
 #### Expected Output:
 **advancement.csv**
-\'''
+'''
 Scout Name,Requirement,Completion Date
 Frank Jones,Scout Rank Requirement 2b,7/19/2024
-\'''
+'''
 
 ---
 
