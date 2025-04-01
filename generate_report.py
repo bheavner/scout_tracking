@@ -3,70 +3,88 @@ import argparse
 import os
 
 def load_advancement_data(filename):
-    advancement_data = {}
-    unassigned_scouts = set()  # Track scouts that are not assigned to a patrol
+    advancement_data = {}  # This should be a dictionary, not a list
     with open(filename, mode='r') as file:
-        reader = csv.reader(file, delimiter='\t')
+        reader = csv.reader(file, delimiter=',')  # Assuming CSV format with commas
+        next(reader)  # Skip the header row
         for row in reader:
-            scout, requirement, date = row
+            if len(row) != 3:  # Ensure the row has 3 columns
+                print(f"Skipping invalid row: {row}")  # Debugging invalid rows
+                continue
+            scout, advancement_info, date_completed = row
+            scout = scout.strip().lower()  # Normalize scout name to lowercase
+
             if scout not in advancement_data:
-                advancement_data[scout] = []
-            advancement_data[scout].append((requirement, date))
-            unassigned_scouts.add(scout)  # Add scout to unassigned set initially
-    return advancement_data, unassigned_scouts
+                advancement_data[scout] = []  # Initialize list for new scouts
+
+            # Append the (advancement_info, date_completed) tuple
+            advancement_data[scout].append((advancement_info.strip(), date_completed.strip()))
+
+    print(f"Finished loading advancement data: {advancement_data}")  # Debugging
+    return advancement_data
 
 def load_patrol_membership(filename):
+    """ Load the patrol membership data (scout names and their patrols). """
     patrol_data = {}
+    scouts_in_patrols = set()  # Track which scouts belong to patrols
     with open(filename, mode='r') as file:
-        reader = csv.reader(file, delimiter='\t')
+        reader = csv.reader(file, delimiter='\t')  # Assuming TSV delimiter is '\t'
+        next(reader)  # Skip header
         for row in reader:
-            scout, patrol = row
+            if len(row) != 2:  # Validate row structure
+                continue
+            scout_name, patrol = row
+            scout_name = scout_name.strip().lower()  # Normalize to lowercase
+            patrol = patrol.strip()
             if patrol not in patrol_data:
                 patrol_data[patrol] = []
-            patrol_data[patrol].append(scout)
-    return patrol_data
+            patrol_data[patrol].append(scout_name)
+            scouts_in_patrols.add(scout_name)
+    return patrol_data, scouts_in_patrols
 
 def load_requirements(filename):
-    requirements = set()
+    """ Load the list of required advancements and their alternative texts. """
+    requirements = []  # Use a list to maintain order
     with open(filename, mode='r') as file:
-        reader = csv.reader(file, delimiter='\t')
+        reader = csv.reader(file, delimiter='\t')  # Assuming TSV delimiter is '\t'
+        next(reader)  # Skip header
         for row in reader:
-            requirements.add(row[0])  # Assumes first column is the requirement name
+            if len(row) != 2:  # Validate row structure
+                continue
+            requirement_name, alt_text = row
+            requirements.append((requirement_name.strip().lower(), alt_text.strip()))  # Preserve order
     return requirements
 
 def generate_report(advancement_data, patrol_data, requirements, patrol_name):
     scouts_in_patrol = patrol_data.get(patrol_name, [])
     report = []
-    
+
     # Add the header row with the requirement names and patrol members
     header = ['Requirement'] + scouts_in_patrol
     report.append(header)
-    
+
     # For each requirement, check if each scout has completed it
-    for req in requirements:
-        row = [req]  # First column will be the requirement name
+    for req, alt_text in requirements:
+        row = [alt_text if alt_text else req]  # Use alternative text if available
         for scout in scouts_in_patrol:
             completed = '✔' if any(r == req for r, _ in advancement_data.get(scout, [])) else ''
             row.append(completed)
         report.append(row)
-    
+
     return report
 
 def save_report_to_tsv(report, patrol_name, output_dir):
-    # Create the output directory if it doesn't exist
+    """ Save the report as a TSV file. """
     os.makedirs(output_dir, exist_ok=True)
-
-    # Create the path for the TSV file
     output_file = os.path.join(output_dir, f"{patrol_name}_report.tsv")
-    
-    # Write the report to the TSV file
     with open(output_file, mode='w', newline='') as file:
         writer = csv.writer(file, delimiter='\t')
         writer.writerows(report)
-
     print(f"Report for patrol '{patrol_name}' saved to {output_file}.")
 
-def generate_unassigned_report(unassigned_scouts, patrol_data, requirements, advancement_data, output_dir):
+def generate_unassigned_report(unassigned_scouts, patrol_data, advancement_data, requirements, output_dir):
+    print(f"Unassigned scouts before report generation: {unassigned_scouts}")  # Debugging
+
     # Identify unassigned scouts
     assigned_scouts = set(scout for scouts in patrol_data.values() for scout in scouts)
     unassigned_scouts = unassigned_scouts - assigned_scouts
@@ -81,14 +99,17 @@ def generate_unassigned_report(unassigned_scouts, patrol_data, requirements, adv
         for requirement, date in advancement_data.get(scout, []):
             unassigned_report.append([scout, requirement, date])
     
+    # Create a set of valid requirements from the requirements list (from `requirements.tsv`)
+    valid_requirements = set(req for req, _ in requirements)
+
     # Add requirements not in the requirements list
     unlisted_requirements = set()
     for scout, requirements_completed in advancement_data.items():
         for requirement, _ in requirements_completed:
-            if requirement not in requirements:
+            if requirement not in valid_requirements:
                 unlisted_requirements.add(requirement)
-    
-    # Add unlisted requirements to the report
+
+    # Add unlisted requirements to the report under "Unknown Scout"
     for requirement in unlisted_requirements:
         unassigned_report.append(["Unknown Scout", requirement, "Not Assigned"])
     
@@ -102,7 +123,7 @@ def generate_unassigned_report(unassigned_scouts, patrol_data, requirements, adv
 
 def main():
     parser = argparse.ArgumentParser(description="Generate a scout advancement report.")
-    parser.add_argument('advancement_file', type=str, help="Path to the advancement data file (TSV format).")
+    parser.add_argument('advancement_file', type=str, help="Path to the advancement data file (CSV format).")
     parser.add_argument('patrols_file', type=str, help="Path to the patrol membership file (TSV format).")
     parser.add_argument('requirements_file', type=str, help="Path to the requirements list file (TSV format).")
     parser.add_argument('output_dir', type=str, help="Directory where the reports will be saved.")
@@ -110,9 +131,16 @@ def main():
     args = parser.parse_args()
 
     # Load the data
-    advancement_data, unassigned_scouts = load_advancement_data(args.advancement_file)
-    patrol_data = load_patrol_membership(args.patrols_file)
+    patrol_data, unassigned_scouts = load_patrol_membership(args.patrols_file)
+    advancement_data = load_advancement_data(args.advancement_file)  # Ensure it's being assigned correctly
+    print(f"Loaded advancement data: {advancement_data}")  # Debugging: print advancement_data structure
     requirements = load_requirements(args.requirements_file)
+
+    # Define scouts_in_patrols: A set of all scouts who are assigned to any patrol
+    scouts_in_patrols = set(scout for scouts in patrol_data.values() for scout in scouts)
+
+    # Identify unassigned scouts (scouts in advancement data but not in patrol data)
+    unassigned_scouts = set(advancement_data.keys()) - scouts_in_patrols
 
     # Generate the report for each patrol and save it as a TSV file
     for patrol_name in patrol_data:
@@ -120,7 +148,7 @@ def main():
         save_report_to_tsv(report, patrol_name, args.output_dir)
 
     # Generate the unassigned scouts and unlisted requirements report
-    generate_unassigned_report(unassigned_scouts, patrol_data, requirements, advancement_data, args.output_dir)
+    generate_unassigned_report(unassigned_scouts, patrol_data, advancement_data, requirements, args.output_dir)
 
 if __name__ == "__main__":
     main()

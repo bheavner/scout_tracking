@@ -33,11 +33,20 @@ def clean_csv(input_file, output_file):
         'BSA Member ID', 'Version', 'Awarded', 'MarkedCompletedBy',
         'MarkedCompletedDate', 'CounselorApprovedBy', 'CounselorApprovedDate',
         'LeaderApprovedBy', 'LeaderApprovedDate', 'AwardedBy', 'AwardedDate',
-        'Approved'
+        'Approved', 'Middle Name'
     ]
 
     # Drop the columns from the DataFrame
     df = df.drop(columns=columns_to_drop, errors='ignore')
+
+    # Merge the 'First Name' and 'Last Name' columns
+    df['Name'] = df['First Name'] + ' ' + df['Last Name']
+    
+    # Merge the 'Advancement Type' and 'Advancement' columns
+    df['Advancement Info'] = df['Advancement Type'] + ' ' + df['Advancement']
+    
+    # Keep only the desired columns in the output
+    df = df[['Name', 'Advancement Info', 'Date Completed']]
 
     # Save the cleaned DataFrame to a new CSV file
     df.to_csv(output_file, index=False)
