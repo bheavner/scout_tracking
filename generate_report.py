@@ -49,6 +49,7 @@ def load_requirements(filename):
             requirements.append((requirement.strip(), alt_text.strip()))
     return requirements
 
+# Generate the patrol report
 def generate_patrol_report(advancement_data, patrol_data, requirements, patrol_name):
     # Get the list of Scouts in the specified patrol
     scouts_in_patrol = patrol_data.get(patrol_name, [])
@@ -68,6 +69,7 @@ def generate_patrol_report(advancement_data, patrol_data, requirements, patrol_n
 
     return report
 
+# Save the report to a file
 def save_report(report, patrol_name, output_dir):
     # Create the output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
@@ -82,9 +84,9 @@ def save_report(report, patrol_name, output_dir):
 
     print(f"Report for patrol '{patrol_name}' saved to {output_file}.")
 
-# Main function to parse arguments and generate report
+# Main function to parse arguments and generate reports
 def main():
-    parser = argparse.ArgumentParser(description="Generate a scout advancement report for a specific patrol.")
+    parser = argparse.ArgumentParser(description="Generate a scout advancement report for a specific patrol or all patrols.")
     
     # Arguments for input files
     parser.add_argument('advancement_file', type=str, help="Path to the advancement data file (CSV format).")
@@ -94,9 +96,9 @@ def main():
     # Argument for the output directory
     parser.add_argument('output_dir', type=str, help="Directory where the reports will be saved.")
     
-    # Argument for the patrol name to generate the report for
-    parser.add_argument('patrol_name', type=str, help="Name of the patrol to generate the report for (e.g., 'Lions').")
-    
+    # Argument for the patrol names to generate reports for (can specify multiple patrols, or 'all' for all patrols)
+    parser.add_argument('patrols', type=str, nargs='*', default=['all'], help="Names of the patrols to generate reports for (space-separated), or 'all' for all patrols.")
+
     args = parser.parse_args()
 
     # Load data
@@ -104,11 +106,17 @@ def main():
     patrol_data = load_patrol_data(args.patrol_file)
     requirements = load_requirements(args.requirements_file)
 
-    # Generate the report for the specified patrol
-    report = generate_patrol_report(advancement_data, patrol_data, requirements, args.patrol_name)
+    # If 'all' is specified, generate reports for all patrols
+    if 'all' in args.patrols:
+        args.patrols = list(patrol_data.keys())
 
-    # Save the report
-    save_report(report, args.patrol_name, args.output_dir)
+    # Generate reports for the specified patrols
+    for patrol_name in args.patrols:
+        if patrol_name in patrol_data:
+            report = generate_patrol_report(advancement_data, patrol_data, requirements, patrol_name)
+            save_report(report, patrol_name, args.output_dir)
+        else:
+            print(f"Warning: Patrol '{patrol_name}' not found in patrol data.")
 
 if __name__ == "__main__":
     main()
