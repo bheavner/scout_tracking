@@ -3,33 +3,72 @@ This project helps to generate reports and perform quality checks for scout adva
 
 Collectively, these scripts process a Scoutbook data export to produce an advancement chart for each Patrol in a Troop.
 
+This README describes:
+[CLI Commands and Usage](#CLI-Commands-and-Usage)
+[Example Input Files](#Example-Input-Files)
+[Expected Output Files](#Expected-Output-Files)
+[License](#License)
+[Attribution](#Attribution)
+
+
 ## CLI Commands and Usage
 
 ### 1. **clean_advancement.py**
-This script processes the Scoutbook export/backup file to remove extra fields and records not related to Scout Advancement Work (for example, Cub Scout Awards).
+**Purpose**: Process the Scoutbook export/backup file to prepare it for subsequent report generation work. This script removes extra fields and records not related to Scout Advancement Work (for example, Cub Scout Awards).
 
-#### Command:
+**Usage**:
 ```
 python clean_advancement.py <input_file> <output_file>
 ```
 
-#### Example Input:
-**troop100__advancement.csv**
+**Arguments**:
+- `input_file`: Path to the advancement data backup file downloaded from Scoutbook (CSV format).
+- `output_file`: Path and name for the output file (CSV format).
+
+**Example**:
 ```
-"BSA Member ID","First Name","Middle Name","Last Name","Advancement Type","Advancement","Version","Date Completed","Approved","Awarded","MarkedCompletedBy","MarkedCompletedDate","CounselorApprovedBy","CounselorApprovedDate","LeaderApprovedBy","LeaderApprovedDate","AwardedBy","AwardedDate"
-12600561,"Frank","A","Jones",,"Scout Rank Requirement","2b",2022,"7/19/2024",1,,ASM_Bill,8/6/2024,,,SM_Mary,8/27/2024,,
+python clean_advancement.py troop_100__advancement.csv advancement.csv
 ```
+
+**Output**:
+A CSV file containing slected information from the Scoutbook backup, formatted for input to subsequent report and QC scripts included in this repository.
+
+
 
 #### Expected Output:
 **advancement.csv**
-'''
+```
 Scout Name,Requirement,Completion Date
 Frank Jones,Scout Rank Requirement 2b,7/19/2024
-'''
+```
 
 ---
+### 2. `generate_report.py`
 
-### 2. `check_scouts_in_patrols.py`
+**Purpose**: Generate a patrol report summarizing the advancement progress of each scout in a specific patrol, a list of patrols, or all the patrols.
+
+**Usage**:
+```
+python generate_report.py <advancement_file> <patrols_file> <requirements_file> <output_dir> [--patrol_name <patrol_name>]
+```
+
+**Arguments**:
+- `advancement_file`: Path to the advancement data file (CSV format).
+- `patrols_file`: Path to the patrol membership file (TSV format).
+- `requirements_file`: Path to the requirements list file (TSV format).
+- `output_dir`: Directory where the reports will be saved.
+- `--patrol_name`: Optional patrol name to generate report for a specific patrol (default is all patrols).
+
+**Example**:
+```
+python generate_report.py scout_tracking/advancement.csv scout_tracking/patrols.tsv scout_tracking/requirements.tsv ./reports --patrol_name Lions
+```
+
+**Output**:
+A TSV report for the specified patrol, showing each scout and their completion status for each requirement.
+
+---
+### 3. `check_scouts_in_patrols.py`
 
 **Purpose**: Check whether there are any Scouts in the advancement.csv file who are not in the patrols.tsv file.
 
@@ -53,7 +92,7 @@ A TSV file listing scouts in the advancement file but not assigned to any patrol
 
 ---
 
-### 3. `check_requirements_in_advancement.py`
+### 4. `check_requirements_in_advancement.py`
 
 **Purpose**: Check if there are any requirements in the advancement.csv file that are not in the requirements.tsv file.
 
@@ -74,32 +113,6 @@ python check_requirements_in_advancement.py scout_tracking/advancement.csv scout
 
 **Output**:
 A TSV file listing requirements in the advancement file that are not listed in the requirements file.
-
----
-
-### 4. `generate_report.py`
-
-**Purpose**: Generate a patrol report summarizing the advancement progress of each scout in a specific patrol.
-
-**Usage**:
-```
-python generate_report.py <advancement_file> <patrols_file> <requirements_file> <output_dir> [--patrol_name <patrol_name>]
-```
-
-**Arguments**:
-- `advancement_file`: Path to the advancement data file (CSV format).
-- `patrols_file`: Path to the patrol membership file (TSV format).
-- `requirements_file`: Path to the requirements list file (TSV format).
-- `output_dir`: Directory where the reports will be saved.
-- `--patrol_name`: Optional patrol name to generate report for a specific patrol (default is all patrols).
-
-**Example**:
-```
-python generate_report.py scout_tracking/advancement.csv scout_tracking/patrols.tsv scout_tracking/requirements.tsv ./reports --patrol_name Lions
-```
-
-**Output**:
-A TSV report for the specified patrol, showing each scout and their completion status for each requirement.
 
 ---
 
@@ -131,31 +144,40 @@ python qc_checks.py scout_tracking/advancement.csv scout_tracking/patrols.tsv sc
 
 ## Example Input Files
 
-### 1. `advancement.csv`
+### 1.`troop100__advancement.csv`
+(for clean_advancement.py)
 ```
-Scout Name,Requirement,Completion Date
-John Doe,First Aid,2025-01-01
-Jane Smith,Camping,2025-02-15
-John Doe,Camping,2025-02-20
-Alice Brown,First Aid,2025-01-10
-Bob Green,First Aid,2025-03-01
-Bob Green,Emergency Preparedness,2025-03-01
+"BSA Member ID","First Name","Middle Name","Last Name","Advancement Type","Advancement","Version","Date Completed","Approved","Awarded","MarkedCompletedBy","MarkedCompletedDate","CounselorApprovedBy","CounselorApprovedDate","LeaderApprovedBy","LeaderApprovedDate","AwardedBy","AwardedDate"
+12600561,"Frank","A","Jones","Scout Rank Requirement","2b",2022,"7/19/2024",1,,ASM_Bill,8/6/2024,,,SM_Mary,8/27/2024,,
 ```
 
-### 2. `patrols.tsv`
+### 2. `advancement.csv`
+```
+Scout Name,Requirement,Completion Date
+Frank Jones,Scout Rank Requirement 2b,7/19/2024
+John Doe,Scout Rank Requirement 3a,7/19/2024
+Jane Smith,First Class Rank Requirement 4,8/1/2024
+John Doe,Tenderfoot Rank Requirement 1a,8/8/2024
+Alice Brown,Scout Rank Requirement 1a,8/1/2024
+Bob Green,Second Class Rank Requirement 2g,8/1/2024
+Bob Green,Tenderfoot Rank Requirement 1a,8/1/2024
+```
+
+### 3. `patrols.tsv`
 ```
 Scout Name    Patrol
+Frank Jones   Ninjas
 Jane Smith    Lions
 Bob Green     Lions
 John Doe      Tigers
 Alice Brown   Tigers
 ```
 
-### 3. `requirements.tsv`
+### 4. `requirements.tsv`
 ```
 Requirement Name        Alternative Text
-First Aid              Basic First Aid
-Camping                Camping Skills
+Scout Rank Requirement 2b              2nd 2b
+Tenderfoot Rank Requirement 1a                Tenderfoot 1a
 ```
 
 ---
@@ -170,8 +192,11 @@ john doe      Tigers
 
 ### 2. From `check_requirements_in_advancement.py`
 ```
-Requirement
-Emergency Preparedness
+Requirements in advancement.csv not found in requirements.tsv:
+first class rank requirement 4
+second class rank requirement 2g
+scout rank requirement 3a
+scout rank requirement 1a
 ```
 
 ### 3. From `generate_report.py`
@@ -204,24 +229,11 @@ Emergency Preparedness
 You can run it from the command line like: 
 `python clean_advancement.py input_file output_file'
 
-# Scout Advancement Report Generator
-`generate_report.py` - load the advancement info, list of patrols, and list of requirements, process them to produce an advancement report for each patrol, along with a report for any scouts not connected to patrols, or any requirements from the report that aren't included in the list of requirements.
-
-You can run it from the command line like:
-'python generate_report.py advancement.tsv patrols.tsv requirements.tsv ./reports'
-
-#advancement.tsv
-an example cleaned advancement report (what would be produced by `clean_advancement.py`
-
-# requirements.tsv
-a list of advancement requirements through first class rank (as of 2025)
-
-# patrols_example.tsv
-an example roster of a pretend Troop
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Attribution
 
 The original code was generated with the assistance of ChatGPT (OpenAI). Thanks to OpenAI for providing the language model that assisted in creating this code.
 

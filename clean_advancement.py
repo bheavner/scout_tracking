@@ -10,16 +10,13 @@ def clean_csv(input_file, output_file):
     advancement_remove_values = [
         'Bobcat', 'Tiger', 'Wolf', 'Bear', 'Webelos', 
         'Arrow of Light', 'Venturing', 'Discovery', 
-        'Pathfinder', 'Summit', 'Lion'
+        'Pathfinder', 'Summit'
     ]
 
     # List of values for which 'Advancement Type' column should be checked to start with
     advancement_type_remove_prefixes = [
         'Venturing', 'Discovery', 'Pathfinder', 
-        'Summit', 'Merit', 'Award', 'Webelos',
-        'Arrow of Light', 'Adventure', 'Tiger',
-        'Lion', 'Bobcat', 'Wolf', 'Bear', 'Webelos',
-        'Academics'
+        'Summit', 'Merit', 'Award'
     ]
 
     # Remove rows where 'Advancement' column contains any of the listed values
@@ -33,18 +30,18 @@ def clean_csv(input_file, output_file):
         'BSA Member ID', 'Version', 'Awarded', 'MarkedCompletedBy',
         'MarkedCompletedDate', 'CounselorApprovedBy', 'CounselorApprovedDate',
         'LeaderApprovedBy', 'LeaderApprovedDate', 'AwardedBy', 'AwardedDate',
-        'Approved', 'Middle Name'
+        'Middle Name'  # Drop 'Middle Name' as it's not needed
     ]
 
-    # Drop the columns from the DataFrame
+    # Drop the unnecessary columns
     df = df.drop(columns=columns_to_drop, errors='ignore')
 
-    # Merge the 'First Name' and 'Last Name' columns
-    df['Name'] = df['First Name'] + ' ' + df['Last Name']
-    
-    # Merge the 'Advancement Type' and 'Advancement' columns
-    df['Advancement Info'] = df['Advancement Type'] + ' ' + df['Advancement']
-    
+    # Merge the 'First Name' and 'Last Name' columns, ensuring no NaN values are present
+    df['Name'] = df['First Name'].fillna('') + (' ' + df['Last Name'].fillna('')) 
+
+    # Merge the 'Advancement Type' and 'Advancement' columns, ensuring no NaN values are present
+    df['Advancement Info'] = df['Advancement Type'].fillna('') + (' ' + df['Advancement'].fillna(''))
+
     # Keep only the desired columns in the output
     df = df[['Name', 'Advancement Info', 'Date Completed']]
 
