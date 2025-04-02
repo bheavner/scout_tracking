@@ -1,23 +1,16 @@
 import csv
 import os
 import argparse
+import datetime
 
-# Load advancement data
-def load_advancement_data(filename):
-    advancement_data = {}
-    with open(filename, mode='r') as file:
-        reader = csv.reader(file, delimiter=',')
-        next(reader)  # Skip header
-        for row in reader:
-            if len(row) != 3:  # Ensure the row has 3 columns
-                continue
-            scout, requirement, _ = row
-            scout = scout.strip().lower()  # Normalize name to lowercase
-            requirement = requirement.strip()
-            if scout not in advancement_data:
-                advancement_data[scout] = set()  # Use set to avoid duplicates
-            advancement_data[scout].add(requirement)  # Add the completed requirement
-    return advancement_data
+def validate_patrol_data(patrol_data):
+    # Check for duplicates
+    all_scouts = set()
+    for patrol, scouts in patrol_data.items():
+        for scout in scouts:
+            if scout in all_scouts:
+                print(f"Duplicate scout '{scout}' found in multiple patrols!")
+            all_scouts.add(scout)
 
 # Load patrol data
 def load_patrol_data(filename):
@@ -34,11 +27,22 @@ def load_patrol_data(filename):
             if patrol not in patrol_data:
                 patrol_data[patrol] = []
             patrol_data[patrol].append(scout)
+    validate_patrol_data(patrol_data)
     return patrol_data
+
+def validate_requirements_data(requirements_data):
+    if not requirements_data:
+        print("Warning: Requirements data is empty!")
+    
+    for req, description in requirements_data.items():
+        if not req or not description:
+            print(f"Invalid entry: Requirement '{req}' has no description.")
+        if req in requirements_data and requirements_data[req] == '':
+            print(f"Warning: Requirement '{req}' has an empty description.")
 
 # Load requirements data
 def load_requirements(filename):
-    requirements = []
+    requirements_data = {}
     with open(filename, mode='r') as file:
         reader = csv.reader(file, delimiter='\t')
         next(reader)  # Skip header
@@ -46,31 +50,66 @@ def load_requirements(filename):
             if len(row) != 2:
                 continue
             requirement, alt_text = row
-            requirements.append((requirement.strip(), alt_text.strip()))
-    return requirements
+            requirements_data[requirement.strip()] = alt_text.strip()
+    validate_requirements_data(requirements_data)
+    return requirements_data
+
+def validate_date(date_str):
+    try:
+        datetime.datetime.strptime(date_str, "%m/%d/%Y")
+        return True
+    except ValueError:
+        print(f"Invalid date format: {date_str}")
+        return False
+
+def validate_advancement_data(advancement_data, requirements_data):
+    for scout, requirements in advancement_data.items():
+        for req, completed in requirements.items():
+            if req not in requirements_data:
+                print(f"Warning: '{req}' requirement not found in requirements file for scout '{scout}'.")
+
+# Load advancement data
+def load_advancement_data(filename):
+    advancement_data = {}
+    with open(filename, mode='r') as file:
+        reader = csv.reader(file)
+        next(reader)  # Skip header
+        for row in reader:
+            if len(row) != 3:
+                continue
+            scout, requirement, date_completed = row
+            scout = scout.strip().lower()  # Normalize name to lowercase
+            if scout not in patrol_data:
+                print(f"Warning: Scout '{scout}' not found in patrol data!")
+                continue
+            
+            # Validate date format
+            if not validate_date(date_completed):
+                continue
+            
+            if scout not in advancement_data:
+                advancement_data[scout] = {}
+            advancement_data[scout][requirement.strip()] = True
+    
+    validate_advancement_data(advancement_data, requirements_data)
+    return advancement_data
 
 # Generate the patrol report
-def generate_patrol_report(advancement_data, patrol_data, requirements, patrol_name):
-    # Get the list of Scouts in the specified patrol
-    scouts_in_patrol = patrol_data.get(patrol_name, [])
-    report = []
-
-    # Add the header row with the requirement names and patrol members
-    header = ['Requirement'] + scouts_in_patrol
-    report.append(header)
-
-    # For each requirement, check if each scout has completed it
-    for req, alt_text in requirements:
-        row = [alt_text if alt_text else req]  # Use alternative text if available
-        for scout in scouts_in_patrol:
-            completed = '✔' if req in advancement_data.get(scout, []) else ''
-            row.append(completed)
-        report.append(row)
-
-    return report
+def generate_patrol_report(patrol_data, requirements_data, advancement_data, patrol_name):
+    # Create the 3D structure: patrol -> scout -> requirements
+    report_data = {}
+    patrol_scouts = patrol_data.get(patrol_name, [])
+    
+    for scout in patrol_scouts:
+        report_data[scout] = {}
+        for requirement, alt_text in requirements_data.items():
+            completed = requirement in advancement_data.get(scout, {})
+            report_data[scout][requirement] = completed
+    
+    return report_data
 
 # Save the report to a file
-def save_report(report, patrol_name, output_dir):
+def save_report(report_data, patrol_name, output_dir):
     # Create the output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
 
@@ -80,43 +119,48 @@ def save_report(report, patrol_name, output_dir):
     # Write the report to the TSV file
     with open(output_file, mode='w', newline='') as file:
         writer = csv.writer(file, delimiter='\t')
-        writer.writerows(report)
+
+        # Write header row with scouts' names
+        header = ['Requirement'] + list(report_data.keys())
+        writer.writerow(header)
+
+        # Write each requirement row
+        for requirement, alt_text in requirements_data.items():
+            row = [alt_text if alt_text else requirement]
+            for scout in report_data:
+                completed = '✔' if report_data[scout].get(requirement, False) else ''
+                row.append(completed)
+            writer.writerow(row)
 
     print(f"Report for patrol '{patrol_name}' saved to {output_file}.")
 
-# Main function to parse arguments and generate reports
+# Main function to parse arguments and generate the report
 def main():
-    parser = argparse.ArgumentParser(description="Generate a scout advancement report for a specific patrol or all patrols.")
+    parser = argparse.ArgumentParser(description="Generate a scout advancement report for a specific patrol.")
     
     # Arguments for input files
-    parser.add_argument('advancement_file', type=str, help="Path to the advancement data file (CSV format).")
-    parser.add_argument('patrol_file', type=str, help="Path to the patrol membership file (TSV format).")
+    parser.add_argument('patrol_file', type=str, help="Path to the patrol data file (TSV format).")
     parser.add_argument('requirements_file', type=str, help="Path to the requirements list file (TSV format).")
+    parser.add_argument('advancement_file', type=str, help="Path to the advancement data file (CSV format).")
     
     # Argument for the output directory
     parser.add_argument('output_dir', type=str, help="Directory where the reports will be saved.")
     
-    # Argument for the patrol names to generate reports for (can specify multiple patrols, or 'all' for all patrols)
-    parser.add_argument('patrols', type=str, nargs='*', default=['all'], help="Names of the patrols to generate reports for (space-separated), or 'all' for all patrols.")
-
+    # Argument for the patrol name to generate the report for
+    parser.add_argument('patrol_name', type=str, help="Name of the patrol to generate the report for (e.g., 'Purple People').")
+    
     args = parser.parse_args()
 
     # Load data
-    advancement_data = load_advancement_data(args.advancement_file)
     patrol_data = load_patrol_data(args.patrol_file)
-    requirements = load_requirements(args.requirements_file)
+    requirements_data = load_requirements(args.requirements_file)
+    advancement_data = load_advancement_data(args.advancement_file, patrol_data)
 
-    # If 'all' is specified, generate reports for all patrols
-    if 'all' in args.patrols:
-        args.patrols = list(patrol_data.keys())
+    # Generate the report for the specified patrol
+    report_data = generate_patrol_report(patrol_data, requirements_data, advancement_data, args.patrol_name)
 
-    # Generate reports for the specified patrols
-    for patrol_name in args.patrols:
-        if patrol_name in patrol_data:
-            report = generate_patrol_report(advancement_data, patrol_data, requirements, patrol_name)
-            save_report(report, patrol_name, args.output_dir)
-        else:
-            print(f"Warning: Patrol '{patrol_name}' not found in patrol data.")
+    # Save the report
+    save_report(report_data, args.patrol_name, args.output_dir)
 
 if __name__ == "__main__":
     main()
